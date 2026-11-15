@@ -152,7 +152,7 @@ function resize(){const rc=canvas.getBoundingClientRect();W=rc.width;H=rc.height
 window.addEventListener('resize',resize);
 if(window.ResizeObserver)new ResizeObserver(resize).observe(canvas);
 function line(x1,y1,x2,y2,color,width=2,dash=[]){ctx.beginPath();ctx.setLineDash(dash);ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.strokeStyle=color;ctx.lineWidth=width;ctx.stroke();ctx.setLineDash([]);}
-function arrow(x1,y1,x2,y2,color,width=3.5){
+function arrow(x1,y1,x2,y2,color,width=1.5){
  const dx=x2-x1,dy=y2-y1,L=Math.hypot(dx,dy);if(L<3)return;
  const ux=dx/L,uy=dy/L;
  line(x1,y1,x2-ux*6,y2-uy*6,color,width);
@@ -218,8 +218,21 @@ function drawWater(now,top,bottom){
  ctx.fillStyle='#eeeadf';ctx.fillRect(0,0,W,top);ctx.fillRect(0,bottom,W,H-bottom);
  line(0,top,W,top,'#839da4',2);line(0,bottom,W,bottom,'#839da4',2);
 }
+function riverWidth(top,bottom){
+ const x=24,mid=(top+bottom)/2,color='#399bc1';
+ ctx.save();
+ // The two arrowheads touch the banks; leave a gap for the width label.
+ arrow(x,mid-17,x,top,color,1.5);
+ arrow(x,mid+17,x,bottom,color,1.5);
+ ctx.font='600 11px -apple-system,system-ui,sans-serif';
+ ctx.textAlign='center';ctx.textBaseline='middle';
+ const label=pretty(state.width)+' m',labelWidth=ctx.measureText(label).width+8;
+ ctx.fillStyle='#e8f7fc';ctx.fillRect(x-labelWidth/2,mid-10,labelWidth,20);
+ ctx.fillStyle=color;ctx.fillText(label,x,mid);
+ ctx.restore();
+}
 function hull(x,y,a,ghost=false){
- ctx.save();ctx.translate(x,y);ctx.rotate(-a);
+ ctx.save();ctx.translate(x,y);ctx.rotate(-a);ctx.scale(.6,.6);
  ctx.shadowColor=ghost?'transparent':'#21475a44';ctx.shadowBlur=ghost?0:7;ctx.shadowOffsetY=ghost?0:2;
  ctx.beginPath();ctx.moveTo(22,0);ctx.lineTo(7,-9.5);ctx.lineTo(-17,-9.5);ctx.lineTo(-17,9.5);ctx.lineTo(7,9.5);ctx.closePath();
  ctx.fillStyle=ghost?'#f7ffffa0':'#fbffff';ctx.fill();ctx.shadowColor='transparent';ctx.strokeStyle=ghost?'#94b8c5':'#2d5666';ctx.lineWidth=2;ctx.stroke();
@@ -263,13 +276,13 @@ function drawScene(now){
  drawWater(now,top,bottom);
  // Draw only the completed path, not a prediction of where the boat will land.
  if(state.t>0){line(originX,startY,boatX,boatY,'#dd986c',3);hull(originX,startY,p.a,true);}
- // Maximum boat vector stops just short of the river midpoint.
- const vectorUnit=riverSpan*.44/10;
+ // Use one fixed scale for all velocities at this viewport size.
+ const vectorUnit=riverSpan*.8/10;
  const arrowX=p.boatX*vectorUnit,arrowY=-p.boatY*vectorUnit,flowX=p.current*vectorUnit;
  ctx.save();ctx.beginPath();ctx.rect(0,top,W,bottom-top);ctx.clip();
- if(state.showResult)arrow(originX,startY,originX+arrowX+flowX,startY+arrowY,'#203e51',3.8);
- if(state.showBoat)arrow(originX,startY,originX+arrowX,startY+arrowY,'#e5794f',3.5);
- if(state.showCurrent&&p.current>0)arrow(originX,startY,originX+flowX,startY,'#2789c7',3.5);
+ if(state.showResult)arrow(originX,startY,originX+arrowX+flowX,startY+arrowY,'#203e51',1.8);
+ if(state.showBoat)arrow(originX,startY,originX+arrowX,startY+arrowY,'#e5794f',1.5);
+ if(state.showCurrent&&p.current>0)arrow(originX,startY,originX+flowX,startY,'#2789c7',1.5);
  if(state.t===0)angleArc(originX,startY);
  ctx.restore();
  // Values follow their arrows and only appear if those vectors are enabled.
@@ -279,6 +292,7 @@ function drawScene(now){
  if(state.showResult)vectorLabel(originX,startY,originX+arrowX+flowX,startY+arrowY,'#203e51',Math.hypot(p.vx,p.vy),'result',occupied,top,bottom);
  // Draw above both bank and velocity vectors even if the hull overlaps the shoreline.
  hull(boatX,boatY,p.a);
+ riverWidth(top,bottom);
 }
 let last=0;
 function loop(timestamp){
