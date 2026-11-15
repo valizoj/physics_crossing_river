@@ -193,9 +193,6 @@ function vectorLabel(x1,y1,x2,y2,color,value,kind,occupied,top,bottom){
  }
  if(chosen){
   const {cx,cy,rect}=chosen;
-  ctx.fillStyle='rgba(255,255,255,.93)';
-  ctx.beginPath();ctx.roundRect(rect.left,rect.top,w,h,5);ctx.fill();
-  ctx.strokeStyle=color;ctx.globalAlpha=.32;ctx.lineWidth=.8;ctx.stroke();ctx.globalAlpha=1;
   ctx.fillStyle=color;ctx.fillText(label,cx,cy+.5);
   occupied.push(rect);
  }
@@ -239,18 +236,37 @@ function hull(x,y,a,ghost=false){
  if(!ghost){line(-11,0,13,0,'#e5794f',3);ctx.beginPath();ctx.arc(-7,0,3.5,0,Math.PI*2);ctx.fillStyle='#83bbd0';ctx.fill();}
  ctx.restore();
 }
-function angleArc(x,y){
+function angleArc(x,y,resultX,resultY,occupied){
  const theta=state.heading,alpha=Math.min(theta,180-theta)*Math.PI/180;if(alpha<.001)return;
- const start=theta>=90?0:Math.PI;const end=theta>=90?-alpha:Math.PI+alpha;
- const radius=26,mid=theta>=90?-alpha/2:Math.PI+alpha/2;
+ const start=theta>=90?0:Math.PI,end=theta>=90?-alpha:Math.PI+alpha;
+ const mid=theta>=90?-alpha/2:Math.PI+alpha/2;
  ctx.save();line(x-43,y,x+43,y,'#6e9297aa',1.1,[3,4]);
- ctx.beginPath();ctx.arc(x,y,radius,start,end,theta>=90);ctx.strokeStyle='#16827d';ctx.lineWidth=2;ctx.stroke();
- const label=pretty(fAngle(alpha*180/Math.PI))+'°',lx=x+Math.cos(mid)*43,ly=y+Math.sin(mid)*43;
+ ctx.beginPath();ctx.arc(x,y,13,start,end,theta>=90);ctx.strokeStyle='#16827d';ctx.lineWidth=1;ctx.stroke();
+ const label=pretty(fAngle(alpha*180/Math.PI))+'°';
  ctx.font='bold 11px -apple-system,system-ui,sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';
- const width=ctx.measureText(label).width;
- if(lx>width/2+4&&lx<W-width/2-4&&ly>12&&ly<H-7){
-  ctx.fillStyle='#f5fffee0';ctx.fillRect(lx-width/2-3,ly-9,width+6,18);
+ const halfWidth=ctx.measureText(label).width/2;
+ const candidates=[];
+ for(const distance of [28,40,54]){
+  for(const offset of [0,-.45,.45]){
+   candidates.push([x+Math.cos(mid+offset)*distance,y+Math.sin(mid+offset)*distance]);
+  }
+ }
+ candidates.push([x+30,y+18],[x-30,y+18]);
+ let chosen=null,best=Infinity;
+ const lengthSquared=resultX*resultX+resultY*resultY;
+ for(const [lx,ly] of candidates){
+  if(lx<halfWidth+4||lx>W-halfWidth-4||ly<10||ly>H-10)continue;
+  const t=lengthSquared?Math.max(0,Math.min(1,((lx-x)*resultX+(ly-y)*resultY)/lengthSquared)):0;
+  const clearance=Math.hypot(lx-x-t*resultX,ly-y-t*resultY);
+  // A circle enclosing the text plus padding keeps it clear of the resultant.
+  const overlap=state.showResult?Math.max(0,Math.hypot(halfWidth,7)+6-clearance):0;
+  const penalty=overlap*100+Math.hypot(lx-x,ly-y);
+  if(penalty<best){best=penalty;chosen=[lx,ly];}
+ }
+ if(chosen){
+  const [lx,ly]=chosen;
   ctx.fillStyle='#147870';ctx.fillText(label,lx,ly);
+  occupied.push({left:lx-halfWidth-3,right:lx+halfWidth+3,top:ly-9,bottom:ly+9});
  }
  ctx.restore();
 }
@@ -285,10 +301,10 @@ function drawScene(now){
  if(state.showResult)arrow(originX,startY,originX+arrowX+flowX,startY+arrowY,'#203e51',1.8);
  if(state.showBoat)arrow(originX,startY,originX+arrowX,startY+arrowY,'#e5794f',1.5);
  if(state.showCurrent&&p.current>0)arrow(originX,startY,originX+flowX,startY,'#2789c7',1.5);
- if(state.t===0)angleArc(originX,startY);
  ctx.restore();
  // Values follow their arrows and only appear if those vectors are enabled.
  const occupied=[];
+ if(state.t===0)angleArc(originX,startY,arrowX+flowX,arrowY,occupied);
  if(state.showBoat)vectorLabel(originX,startY,originX+arrowX,startY+arrowY,'#c46135',state.boatSpeed,'boat',occupied,top,bottom);
  if(state.showCurrent&&p.current>0)vectorLabel(originX,startY,originX+flowX,startY,'#1769a0',p.current,'river',occupied,top,bottom);
  if(state.showResult)vectorLabel(originX,startY,originX+arrowX+flowX,startY+arrowY,'#203e51',Math.hypot(p.vx,p.vy),'result',occupied,top,bottom);
