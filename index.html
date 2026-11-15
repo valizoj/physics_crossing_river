@@ -1,0 +1,298 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#f6f8fa">
+<title>速度の合成｜船と川</title>
+<style>
+:root{color-scheme:light;--ink:#243648;--muted:#6c7b87;--border:#dce4e9;--river:#2789c7;--boat:#e5794f;--sum:#203e51;--green:#16827d}
+*{box-sizing:border-box}
+body{margin:0;background:#f6f8fa;color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Hiragino Kaku Gothic ProN","Yu Gothic",Meiryo,sans-serif;-webkit-tap-highlight-color:transparent}
+button,input,select{font:inherit}button{cursor:pointer}button:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visible{outline:2px solid #3998da;outline-offset:2px}
+.app{width:min(100%,560px);height:100dvh;min-height:625px;margin:0 auto;padding:calc(7px + env(safe-area-inset-top)) 8px calc(7px + env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:7px}
+.visual{position:relative;flex:1 1 auto;min-height:190px;overflow:hidden;border:1px solid #c7dbe7;border-radius:12px;background:#d5edf4}
+canvas{display:block;width:100%;height:100%}
+.transport{position:absolute;left:50%;bottom:11px;transform:translateX(-50%);display:flex;gap:9px;align-items:center;white-space:nowrap;padding:5px 7px;background:#ffffffdc;border:1px solid #d6e3ea;border-radius:12px;box-shadow:0 2px 12px #49657426;backdrop-filter:blur(7px)}
+.icon-button{border:1px solid #d7e3e9;background:#fff;color:#234458;border-radius:9px;width:43px;height:38px;display:flex;align-items:center;justify-content:center;font-size:22px;line-height:1;font-weight:650;padding:0}
+.icon-button.play{background:#176f70;color:white;border-color:#176f70}
+.icon-button:active{transform:scale(.95)}
+.speed{border:0;background:transparent;color:#40596b;font-size:13px;font-weight:650;height:37px;padding:0 5px;min-width:45px;text-align:center}
+.panel{flex:0 0 auto;border:1px solid var(--border);border-radius:12px;background:#fff;padding:9px 11px 8px;box-shadow:0 2px 9px #60778c0c}
+.preset-row{display:grid;grid-template-columns:auto repeat(4,minmax(0,1fr));gap:6px;align-items:center;margin-bottom:10px}
+.preset-caption{font-size:12px;font-weight:700;color:#536877;white-space:nowrap;padding-right:4px}
+.preset{border:1px solid #d4e1e6;background:#f8fafb;color:#364e5b;border-radius:7px;min-height:31px;padding:3px 3px;font-size:12px;font-weight:700;white-space:nowrap}
+.preset.active{background:#e6f4f1;color:#11716c;border-color:#58aaa2}
+.sliders{display:grid;gap:3px}
+.slider-row{min-width:0}
+.slider-top{display:flex;justify-content:space-between;align-items:center;gap:6px;height:21px}
+.slider-top label{font-size:12px;font-weight:700;white-space:nowrap}
+.slider-value{font-size:12px;color:#16786e;font-weight:750;font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap}
+input[type=range]{display:block;width:100%;height:21px;margin:0;accent-color:#228f8a;cursor:pointer}
+.toggles{display:grid;grid-template-columns:1fr 1fr;gap:3px 10px;margin-top:9px;padding-top:8px;border-top:1px solid #e9edef}
+.toggle{display:flex;align-items:center;justify-content:space-between;gap:5px;min-width:0;height:27px;cursor:pointer}
+.toggle-name{display:flex;align-items:center;min-width:0;gap:5px;font-size:11.5px;font-weight:650;white-space:nowrap}
+.dot{width:9px;height:9px;flex:none;background:var(--boat);border-radius:3px}
+.dot.river{background:var(--river)}.dot.sum{background:var(--sum)}
+.toggle input[type=checkbox]{appearance:none;-webkit-appearance:none;position:relative;flex:none;width:34px;height:20px;border-radius:20px;background:#c8d2d9;margin:0;cursor:pointer;transition:background .15s}
+.toggle input[type=checkbox]:before{content:"";position:absolute;left:3px;top:3px;width:14px;height:14px;border-radius:50%;background:#fff;box-shadow:0 1px 3px #172e3830;transition:transform .15s}
+.toggle input[type=checkbox]:checked{background:#188984}.toggle input[type=checkbox]:checked:before{transform:translateX(14px)}
+.details{border-top:1px solid #e9edef;margin-top:8px;padding-top:6px}
+.details summary{font-size:12px;font-weight:700;color:#546d79;cursor:pointer;list-style:none;display:flex;justify-content:space-between;align-items:center;padding:2px 0}
+.details summary::-webkit-details-marker{display:none}
+.details summary:after{content:'⌄';font-size:17px;line-height:1}.details[open] summary:after{content:'⌃'}
+.exact-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px 12px;margin-top:10px;padding-bottom:4px}
+.exact-grid label{display:grid;gap:4px;color:#546977;font-size:11px;font-weight:700}
+.exact-grid input{width:100%;height:33px;border:1px solid #d6e2e8;border-radius:7px;padding:5px 7px;color:var(--ink);font-size:16px;background:#fff;font-variant-numeric:tabular-nums}
+@media(max-height:725px){.app{min-height:590px;gap:5px;padding-top:5px;padding-bottom:5px}.panel{padding-top:7px;padding-bottom:6px}.preset-row{margin-bottom:6px}.toggles{margin-top:5px;padding-top:5px}.details{margin-top:5px;padding-top:4px}}
+@media(max-width:360px){.app{padding-left:5px;padding-right:5px}.panel{padding-left:8px;padding-right:8px}.preset-row{gap:4px}.toggle-name{font-size:10.5px}}
+@media(prefers-reduced-motion:reduce){.icon-button:active{transform:none}}
+</style>
+</head>
+<body>
+<main class="app">
+  <section class="visual" aria-label="船が川を渡るアニメーション">
+    <canvas id="riverCanvas" role="img" aria-label="下の岸から対岸へ進む船と、速度ベクトルのアニメーション"></canvas>
+    <div class="transport">
+      <button class="icon-button play" id="playBtn" type="button" aria-label="再生" title="再生">▶</button>
+      <button class="icon-button" id="resetBtn" type="button" aria-label="停止して最初に戻す" title="停止して最初に戻す">■</button>
+      <select class="speed" id="speedSelect" aria-label="再生倍率" title="再生倍率">
+        <option value="1">1×</option><option value="2">2×</option><option value="5" selected>5×</option><option value="10">10×</option><option value="20">20×</option>
+      </select>
+    </div>
+  </section>
+  <section class="panel" aria-label="シミュレーションの設定">
+    <div class="preset-row" role="group" aria-label="センサー">
+      <span class="preset-caption">センサー</span>
+      <button type="button" class="preset active" data-preset="18a">18(1)</button>
+      <button type="button" class="preset" data-preset="18b">18(2)</button>
+      <button type="button" class="preset" data-preset="5">5</button>
+      <button type="button" class="preset" data-preset="6">6</button>
+    </div>
+    <div class="sliders">
+      <div class="slider-row"><div class="slider-top"><label for="heading">船首の角度</label><span id="headingValue" class="slider-value"></span></div><input id="heading" type="range" min="0" max="180" step="15"></div>
+      <div class="slider-row"><div class="slider-top"><label for="boatSpeed">船自身の速さ</label><span id="boatValue" class="slider-value"></span></div><input id="boatSpeed" type="range" min="1" max="10" step="1"></div>
+      <div class="slider-row"><div class="slider-top"><label for="currentSpeed">川の流速</label><span id="currentValue" class="slider-value"></span></div><input id="currentSpeed" type="range" min="0" max="8" step="1"></div>
+      <div class="slider-row"><div class="slider-top"><label for="width">川幅</label><span id="widthValue" class="slider-value"></span></div><input id="width" type="range" min="30" max="120" step="10"></div>
+    </div>
+    <div class="toggles">
+      <label class="toggle"><span class="toggle-name">川を流す</span><input type="checkbox" id="flowOn" checked></label>
+      <label class="toggle"><span class="toggle-name"><i class="dot"></i>船のベクトル</span><input type="checkbox" id="showBoat" checked></label>
+      <label class="toggle"><span class="toggle-name"><i class="dot river"></i>川のベクトル</span><input type="checkbox" id="showCurrent" checked></label>
+      <label class="toggle"><span class="toggle-name"><i class="dot sum"></i>合成ベクトル</span><input type="checkbox" id="showResult" checked></label>
+    </div>
+    <details class="details" id="advanced">
+      <summary>詳細設定</summary>
+      <div class="exact-grid">
+        <label>船首の角度 (0–180°)<input id="exactHeading" type="number" min="0" max="180" step="any" inputmode="decimal"></label>
+        <label>船自身の速さ (m/s)<input id="exactBoat" type="number" min="0.1" max="10" step="any" inputmode="decimal"></label>
+        <label>川の流速 (m/s)<input id="exactCurrent" type="number" min="0" max="8" step="any" inputmode="decimal"></label>
+        <label>川幅 (m)<input id="exactWidth" type="number" min="1" max="120" step="any" inputmode="decimal"></label>
+      </div>
+    </details>
+  </section>
+</main>
+<script>
+(()=>{'use strict';
+const $=id=>document.getElementById(id);
+const canvas=$('riverCanvas'), ctx=canvas.getContext('2d');
+const exactFive=Math.acos(3/5)*180/Math.PI;
+const exactSix=2*Math.sqrt(3);
+const presets={
+ '18a':{heading:90,boatSpeed:4,currentSpeed:4,width:60,flowOn:true},
+ '18b':{heading:120,boatSpeed:4,currentSpeed:4,width:60,flowOn:true},
+ '5':{heading:exactFive,boatSpeed:5,currentSpeed:3,width:100,flowOn:true},
+ '6':{heading:90,boatSpeed:6,currentSpeed:exactSix,width:30,flowOn:true}
+};
+const state={...presets['18a'],showBoat:true,showCurrent:true,showResult:true,playSpeed:5,t:0,playing:false,arrived:false,camera:0,preset:'18a'};
+const rangeIds=['heading','boatSpeed','currentSpeed','width'];
+const exactIds={heading:'exactHeading',boatSpeed:'exactBoat',currentSpeed:'exactCurrent',width:'exactWidth'};
+const valueIds={heading:'headingValue',boatSpeed:'boatValue',currentSpeed:'currentValue',width:'widthValue'};
+const clamp=(x,min,max)=>Math.max(min,Math.min(max,x));
+const pretty=x=>String(Number(x.toFixed(4)));
+const fAngle=x=>Number(x.toFixed(1));
+function showAngle(){const a=Math.min(state.heading,180-state.heading);const side=state.heading<90-1e-7?'上流 ':state.heading>90+1e-7?'下流 ':'';return side+pretty(fAngle(a))+'°';}
+function physics(){
+ const a=(180-state.heading)*Math.PI/180;
+ const boatX=state.boatSpeed*Math.cos(a),boatY=state.boatSpeed*Math.sin(a);
+ const current=state.flowOn?state.currentSpeed:0;
+ const vx=boatX+current,vy=Math.abs(boatY)<1e-9?0:boatY;
+ const time=vy>1e-9?state.width/vy:Infinity;
+ return {a,boatX,boatY,current,vx,vy,time};
+}
+function refresh(){
+ rangeIds.forEach(id=>{
+  $(id).value=String(state[id]);
+  $(exactIds[id]).value=pretty(state[id]);
+  $(valueIds[id]).textContent=id==='heading'?showAngle():pretty(state[id])+(id==='width'?' m':' m/s');
+ });
+ ['flowOn','showBoat','showCurrent','showResult'].forEach(id=>$(id).checked=state[id]);
+ document.querySelectorAll('[data-preset]').forEach(btn=>{const active=state.preset===btn.dataset.preset;btn.classList.toggle('active',active);btn.setAttribute('aria-pressed',String(active));});
+ updatePlayButton();
+}
+function updatePlayButton(){const b=$('playBtn');b.textContent=state.playing?'Ⅱ':'▶';b.setAttribute('aria-label',state.playing?'一時停止':'再生');b.title=state.playing?'一時停止':'再生';}
+function reset(){state.t=0;state.camera=0;state.playing=false;state.arrived=false;updatePlayButton();}
+function setPhysical(id,v){state[id]=v;state.preset=null;reset();refresh();}
+rangeIds.forEach(id=>$(id).addEventListener('input',e=>setPhysical(id,Number(e.target.value))));
+const bounds={heading:[0,180],boatSpeed:[.1,10],currentSpeed:[0,8],width:[1,120]};
+rangeIds.forEach(id=>{
+ const el=$(exactIds[id]);
+ function commit(){const v=Number(el.value);if(el.value.trim()===''||!Number.isFinite(v)){refresh();return;}setPhysical(id,clamp(v,...bounds[id]));}
+ el.addEventListener('change',commit);
+ el.addEventListener('keydown',e=>{if(e.key==='Enter'){el.blur();}});
+});
+$('flowOn').addEventListener('change',e=>setPhysical('flowOn',e.target.checked));
+['showBoat','showCurrent','showResult'].forEach(id=>$(id).addEventListener('change',e=>{state[id]=e.target.checked;}));
+document.querySelectorAll('[data-preset]').forEach(btn=>btn.addEventListener('click',()=>{Object.assign(state,presets[btn.dataset.preset]);state.preset=btn.dataset.preset;reset();refresh();}));
+$('playBtn').addEventListener('click',()=>{if(state.arrived)reset();state.playing=!state.playing;updatePlayButton();});
+$('resetBtn').addEventListener('click',reset);
+$('speedSelect').addEventListener('change',e=>{state.playSpeed=Number(e.target.value);});
+let W=0,H=0;
+function resize(){const rc=canvas.getBoundingClientRect();W=rc.width;H=rc.height;const dpr=Math.min(window.devicePixelRatio||1,2.5);canvas.width=Math.max(1,Math.round(W*dpr));canvas.height=Math.max(1,Math.round(H*dpr));ctx.setTransform(dpr,0,0,dpr,0,0);}
+window.addEventListener('resize',resize);
+if(window.ResizeObserver)new ResizeObserver(resize).observe(canvas);
+function line(x1,y1,x2,y2,color,width=2,dash=[]){ctx.beginPath();ctx.setLineDash(dash);ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.strokeStyle=color;ctx.lineWidth=width;ctx.stroke();ctx.setLineDash([]);}
+function arrow(x1,y1,x2,y2,color,width=3.5){
+ const dx=x2-x1,dy=y2-y1,L=Math.hypot(dx,dy);if(L<3)return;
+ const ux=dx/L,uy=dy/L;
+ line(x1,y1,x2-ux*6,y2-uy*6,color,width);
+ ctx.beginPath();ctx.moveTo(x2,y2);ctx.lineTo(x2-ux*11-uy*4.5,y2-uy*11+ux*4.5);ctx.lineTo(x2-ux*11+uy*4.5,y2-uy*11-ux*4.5);ctx.closePath();ctx.fillStyle=color;ctx.fill();
+}
+// Small numeric labels are attached to the vector arrows, never to the control panel.
+const magnitudeLabel = value => (Number(value.toFixed(2))).toString()+' m/s';
+function vectorLabel(x1,y1,x2,y2,color,value,kind,occupied,top,bottom){
+ const length=Math.hypot(x2-x1,y2-y1);
+ if(length<3)return;
+ const label=magnitudeLabel(value);
+ ctx.save();
+ ctx.font='600 10.5px -apple-system,BlinkMacSystemFont,system-ui,sans-serif';
+ ctx.textBaseline='middle';ctx.textAlign='center';
+ const w=ctx.measureText(label).width+11,h=18;
+ // Place labels near their own arrowheads: boat left, current below, resultant above.
+ const offset=kind==='boat'?[[-w/2-7,-9],[-w/2-7,-23],[12,-21],[-8,17]]:
+              kind==='river'?[[w/2+6,-10],[w/2+6,-27],[0,-25],[w/2+6,14]]:
+              [[w/2+8,-12],[w/2+8,-27],[0,-24],[-w/2-8,-12],[w/2+8,15]];
+ let chosen=null,best=Infinity;
+ for(const [ox,oy] of offset){
+  const cx=x2+ox,cy=y2+oy;
+  const rect={left:cx-w/2,right:cx+w/2,top:cy-h/2,bottom:cy+h/2};
+  let penalty=0;
+  if(rect.left<3)penalty+=(3-rect.left)*100;
+  if(rect.right>W-3)penalty+=(rect.right-W+3)*100;
+  if(rect.top<top+4)penalty+=(top+4-rect.top)*100;
+  if(rect.bottom>bottom-4)penalty+=(rect.bottom-bottom+4)*100;
+  for(const other of occupied){
+   const dx=Math.min(rect.right+3,other.right)-Math.max(rect.left-3,other.left);
+   const dy=Math.min(rect.bottom+3,other.bottom)-Math.max(rect.top-3,other.top);
+   if(dx>0&&dy>0)penalty+=dx*dy*10;
+  }
+  // Discourage hiding the boat at the vector origin.
+  if(rect.left<x1+15&&rect.right>x1-15&&rect.top<y1+13&&rect.bottom>y1-13)penalty+=2500;
+  if(penalty<best){best=penalty;chosen={cx,cy,rect};}
+  if(penalty===0)break;
+ }
+ if(chosen){
+  const {cx,cy,rect}=chosen;
+  ctx.fillStyle='rgba(255,255,255,.93)';
+  ctx.beginPath();ctx.roundRect(rect.left,rect.top,w,h,5);ctx.fill();
+  ctx.strokeStyle=color;ctx.globalAlpha=.32;ctx.lineWidth=.8;ctx.stroke();ctx.globalAlpha=1;
+  ctx.fillStyle=color;ctx.fillText(label,cx,cy+.5);
+  occupied.push(rect);
+ }
+ ctx.restore();
+}
+function drawWater(now,top,bottom){
+ ctx.fillStyle='#ece9e0';ctx.fillRect(0,0,W,H);
+ const gradient=ctx.createLinearGradient(0,top,0,bottom);gradient.addColorStop(0,'#d8eef5');gradient.addColorStop(.5,'#bfe1ed');gradient.addColorStop(1,'#d8ecf2');ctx.fillStyle=gradient;ctx.fillRect(0,top,W,bottom-top);
+ ctx.save();ctx.beginPath();ctx.rect(0,top,W,bottom-top);ctx.clip();
+ const shift=(state.flowOn?state.currentSpeed:0)*now*13;
+ ctx.strokeStyle='#ffffff99';ctx.lineWidth=1.5;
+ for(let row=0,y=top+19;y<bottom-8;row++,y+=27){
+  const stride=105;const offset=((shift-state.camera*.2+row*43)%stride+stride)%stride;
+  for(let x=offset-stride;x<W+stride;x+=stride){
+   ctx.beginPath();ctx.moveTo(x,y);ctx.quadraticCurveTo(x+13,y-4,x+26,y);ctx.quadraticCurveTo(x+34,y+3,x+44,y);ctx.stroke();
+   ctx.beginPath();ctx.moveTo(x+57,y+7);ctx.quadraticCurveTo(x+65,y+4,x+74,y+7);ctx.stroke();
+  }
+ }
+ ctx.restore();
+ ctx.fillStyle='#eeeadf';ctx.fillRect(0,0,W,top);ctx.fillRect(0,bottom,W,H-bottom);
+ line(0,top,W,top,'#839da4',2);line(0,bottom,W,bottom,'#839da4',2);
+}
+function hull(x,y,a,ghost=false){
+ ctx.save();ctx.translate(x,y);ctx.rotate(-a);
+ ctx.shadowColor=ghost?'transparent':'#21475a44';ctx.shadowBlur=ghost?0:7;ctx.shadowOffsetY=ghost?0:2;
+ ctx.beginPath();ctx.moveTo(22,0);ctx.lineTo(7,-9.5);ctx.lineTo(-17,-9.5);ctx.lineTo(-17,9.5);ctx.lineTo(7,9.5);ctx.closePath();
+ ctx.fillStyle=ghost?'#f7ffffa0':'#fbffff';ctx.fill();ctx.shadowColor='transparent';ctx.strokeStyle=ghost?'#94b8c5':'#2d5666';ctx.lineWidth=2;ctx.stroke();
+ if(!ghost){line(-11,0,13,0,'#e5794f',3);ctx.beginPath();ctx.arc(-7,0,3.5,0,Math.PI*2);ctx.fillStyle='#83bbd0';ctx.fill();}
+ ctx.restore();
+}
+function angleArc(x,y){
+ const theta=state.heading,alpha=Math.min(theta,180-theta)*Math.PI/180;if(alpha<.001)return;
+ const start=theta>=90?0:Math.PI;const end=theta>=90?-alpha:Math.PI+alpha;
+ const radius=26,mid=theta>=90?-alpha/2:Math.PI+alpha/2;
+ ctx.save();line(x-43,y,x+43,y,'#6e9297aa',1.1,[3,4]);
+ ctx.beginPath();ctx.arc(x,y,radius,start,end,theta>=90);ctx.strokeStyle='#16827d';ctx.lineWidth=2;ctx.stroke();
+ const label=pretty(fAngle(alpha*180/Math.PI))+'°',lx=x+Math.cos(mid)*43,ly=y+Math.sin(mid)*43;
+ ctx.font='bold 11px -apple-system,system-ui,sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';
+ const width=ctx.measureText(label).width;
+ if(lx>width/2+4&&lx<W-width/2-4&&ly>12&&ly<H-7){
+  ctx.fillStyle='#f5fffee0';ctx.fillRect(lx-width/2-3,ly-9,width+6,18);
+  ctx.fillStyle='#147870';ctx.fillText(label,lx,ly);
+ }
+ ctx.restore();
+}
+function drawScene(now){
+ if(!W||!H)return;
+ ctx.clearRect(0,0,W,H);
+ const p=physics();
+ // All nominal river widths use the same pixel span; the physical width sets travel time.
+ const riverHeight=Math.max(80,(H-121)*.8);
+ const top=(H-riverHeight)/2,bottom=top+riverHeight,startY=bottom-13,riverSpan=Math.max(20,startY-top);
+ const pixelsPerMeter=riverSpan/state.width;
+ const traveledX=p.vx*state.t*pixelsPerMeter;
+ const traveledY=p.vy*state.t*pixelsPerMeter;
+ const startX=W*.5;
+ if(state.t===0)state.camera=0;
+ else{
+  const screenX=startX+traveledX-state.camera;
+  const margin=Math.min(80,Math.max(43,W*.21));
+  const target=screenX>W-margin?state.camera+screenX-(W-margin):screenX<margin?state.camera+screenX-margin:state.camera;
+  state.camera+=(target-state.camera)*.23;
+ }
+ const originX=startX-state.camera,boatX=originX+traveledX,boatY=startY-traveledY;
+ drawWater(now,top,bottom);
+ // Draw only the completed path, not a prediction of where the boat will land.
+ if(state.t>0){line(originX,startY,boatX,boatY,'#dd986c',3);hull(originX,startY,p.a,true);}
+ // Maximum boat vector stops just short of the river midpoint.
+ const vectorUnit=riverSpan*.44/10;
+ const arrowX=p.boatX*vectorUnit,arrowY=-p.boatY*vectorUnit,flowX=p.current*vectorUnit;
+ ctx.save();ctx.beginPath();ctx.rect(0,top,W,bottom-top);ctx.clip();
+ if(state.showResult)arrow(originX,startY,originX+arrowX+flowX,startY+arrowY,'#203e51',3.8);
+ if(state.showBoat)arrow(originX,startY,originX+arrowX,startY+arrowY,'#e5794f',3.5);
+ if(state.showCurrent&&p.current>0)arrow(originX,startY,originX+flowX,startY,'#2789c7',3.5);
+ if(state.t===0)angleArc(originX,startY);
+ ctx.restore();
+ // Values follow their arrows and only appear if those vectors are enabled.
+ const occupied=[];
+ if(state.showBoat)vectorLabel(originX,startY,originX+arrowX,startY+arrowY,'#c46135',state.boatSpeed,'boat',occupied,top,bottom);
+ if(state.showCurrent&&p.current>0)vectorLabel(originX,startY,originX+flowX,startY,'#1769a0',p.current,'river',occupied,top,bottom);
+ if(state.showResult)vectorLabel(originX,startY,originX+arrowX+flowX,startY+arrowY,'#203e51',Math.hypot(p.vx,p.vy),'result',occupied,top,bottom);
+ // Draw above both bank and velocity vectors even if the hull overlaps the shoreline.
+ hull(boatX,boatY,p.a);
+}
+let last=0;
+function loop(timestamp){
+ if(!last)last=timestamp;
+ const dt=Math.min((timestamp-last)/1000,.08);last=timestamp;
+ if(state.playing){
+  const p=physics();state.t+=dt*state.playSpeed;
+  if(p.time<Infinity&&state.t>=p.time){state.t=p.time;state.playing=false;state.arrived=true;updatePlayButton();}
+ }
+ drawScene(timestamp/1000);
+ requestAnimationFrame(loop);
+}
+resize();refresh();requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>
