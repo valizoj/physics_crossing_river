@@ -276,6 +276,8 @@ function drawScene(now){
  drawWater(now,top,bottom);
  // Draw only the completed path, not a prediction of where the boat will land.
  if(state.t>0){line(originX,startY,boatX,boatY,'#dd986c',3);hull(originX,startY,p.a,true);}
+ // Draw velocity vectors in front of the boat.
+ hull(boatX,boatY,p.a);
  // Use one fixed scale for all velocities at this viewport size.
  const vectorUnit=riverSpan*.8/10;
  const arrowX=p.boatX*vectorUnit,arrowY=-p.boatY*vectorUnit,flowX=p.current*vectorUnit;
@@ -290,8 +292,6 @@ function drawScene(now){
  if(state.showBoat)vectorLabel(originX,startY,originX+arrowX,startY+arrowY,'#c46135',state.boatSpeed,'boat',occupied,top,bottom);
  if(state.showCurrent&&p.current>0)vectorLabel(originX,startY,originX+flowX,startY,'#1769a0',p.current,'river',occupied,top,bottom);
  if(state.showResult)vectorLabel(originX,startY,originX+arrowX+flowX,startY+arrowY,'#203e51',Math.hypot(p.vx,p.vy),'result',occupied,top,bottom);
- // Draw above both bank and velocity vectors even if the hull overlaps the shoreline.
- hull(boatX,boatY,p.a);
  riverWidth(top,bottom);
 }
 let last=0;
